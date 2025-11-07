@@ -1,69 +1,35 @@
-########################
-#  OS & Editor Files   #
-########################
-
-# Windows
-Thumbs.db
-Desktop.ini
-
-# VS Code settings
-.vscode/
-.code-workspace
-
-# JetBrains (if ever used)
-.idea/
-
-########################
-#      Python          #
-########################
-
-# Byte-compiled / optimized files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments
+# Virtual env
 venv/
 .env/
 .venv/
-ENV/
-env/
 
-# Distribution / packaging
+# Build and packaging
 build/
 dist/
 *.egg-info/
-.eggs/
 
-# Unit test / coverage
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-pytest_cache/
+# Jupyter
+.ipynb_checkpoints/
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
+# VS Code
+.vscode/
 
-########################
-#     Output Files     #
-########################
-
-# Output and temporary folders
+# Output / temporary / logs
 output/
-results/
-tmp/
 logs/
+tmp/
 
-# Any leftover temp files
-*.tmp
-*.log
+# Data (optional)
+data/*.csv
+data/*.xlsx
+data/*.json
 
-########################
-#     Miscellaneous    #
-########################
-
-*.bak
-*.swp
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
