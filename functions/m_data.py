@@ -111,3 +111,76 @@ def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_pro
 
     # Gefiltertes DataFrame zurückgeben
     return df_datarecorder[mask].reset_index(drop=True)
+
+def read_lascar_file(folder_path_lascar: str) -> DataFrame:
+    """Read in all csv-files from lascar folder as a single DataFrame
+
+    Args:
+        folder_path_lascar (str): path to folder of lascar files
+
+    Returns:
+        DataFrame: Concatenated DataFrame of all Lascar USB logger CSV files
+    """
+
+    folder = Path(folder_path_lascar)
+
+    dfs = []
+
+    for csv_file in sorted(folder.glob("*.csv")):
+        df = pd.read_csv(
+            csv_file,
+            sep=";",
+            encoding="cp1252",              # wichtig wegen °C
+            decimal=",",                     # deutsches Dezimaltrennzeichen
+            names=["Index", "Time", "Temperature_C", "Serial_Number"],
+            header=0,                        # erste Zeile ist Header
+            parse_dates=["Time"],
+            dayfirst=True,                   # DD.MM.YYYY
+            low_memory=False,
+            dtype={"Serial_Number": "string"}
+        )
+        df = df.drop(columns=["Index"])
+        df["Serial_Number"] = df["Serial_Number"].ffill()
+
+
+        dfs.append(df)
+
+    combined = pd.concat(dfs, ignore_index=True)
+    combined = combined.sort_values("Time").reset_index(drop=True)
+
+    # Pivot: jede Seriennummer bekommt eine eigene Spalte
+    df_wide = combined.pivot(index="Time", columns="Serial_Number", values="Temperature_C")
+
+    # Spaltennamen schöner machen
+    df_wide.columns = [f"Sensor_{int(c)}" for c in df_wide.columns]
+
+    return df_wide.reset_index()
+
+def compare_datatimestamps_lascar_protocoll(df_lascar: DataFrame, df_protocoll: DataFrame) -> DataFrame:
+    """Compare lascar Timestamps to protocoll Timestamps and
+       only keep lascar rows that fall within any protocoll start/end interval.
+
+    Args:
+        df_lascar (DataFrame): DataFrame of lascar file, must have 'Timestamp' column
+        df_protocoll (DataFrame): DataFrame of protocoll file, must have 'start_time' and 'end_time'
+
+    Returns:
+        DataFrame: Filtered version of df_lascar
+    """
+    df_lascar = df_lascar.sort_values('Time')
+    df_protocoll = df_protocoll.sort_values('start_time')
+
+    df_merged = pd.merge_asof(
+        df_lascar,
+        df_protocoll,
+        left_on='Time',
+        right_on='start_time',
+        direction='backward'
+    )
+
+    mask = df_merged['Time'] <= df_merged['end_time']
+
+    # Alle Spalten von df_lascar behalten, gefiltert nach Intervall
+    df_filtered = df_merged.loc[mask, df_lascar.columns].reset_index(drop=True)
+
+    return df_filtered
