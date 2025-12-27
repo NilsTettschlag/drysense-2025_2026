@@ -53,3 +53,6 @@ path_dryness_folder = f'data/{set_machine}/protocoll_dryness'
 df_dryness = m_data.read_dryness_data(path_dryness_folder)
 
 data_with_dryness = m_data.add_dryness_values(data_timestamps_filtered_datarecorder, df_dryness)
+
+# Save outputs of datarecorder data with dryness values
+data_with_dryness.to_csv(f'output/{set_machine}/datarecorder_with_dryness.csv', index=False)

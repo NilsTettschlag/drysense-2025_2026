@@ -223,6 +223,7 @@ def read_dryness_data(folder_path_dryness_data: str) -> DataFrame:
             csv_file,
             sep=';',
             encoding="cp1252",
+            decimal=",",
             low_memory=False
         )
 
@@ -239,6 +240,9 @@ def read_dryness_data(folder_path_dryness_data: str) -> DataFrame:
 
 def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame) -> DataFrame:
     """Add dryness values to datarecorder DataFrame based on external dryness data file.
+       Filter by Protocol data for each machine:
+       DLRA: matxh by T_drying and n_UL
+       OCEAN: match by t_duration
 
     Args:
         df_datarecorder (DataFrame): DataFrame containing filtered datarecorder Data and Protocoll data
@@ -248,4 +252,30 @@ def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame) -
         DataFrame: DataFrame with added dryness values
     """
 
-    return df_datarecorder  
+    df_datarecorder = df_datarecorder.copy()
+    dryness_values = []
+
+    for _, row in df_datarecorder.iterrows():
+
+        # Find matching dryness data row
+        if 't_duration' in row:
+            match = df_dryness_data[df_dryness_data['t_duration'] == row['t_duration']]
+        elif 'T_drying' in row and 'n_UL' in row:
+            match = df_dryness_data[
+                (df_dryness_data['T_drying'] == row['T_drying']) &
+                (df_dryness_data['n_UL'] == row['n_UL'])
+            ]
+        else:
+            match = pd.DataFrame()  # No match if required columns are missing 
+        # Get dryness value if match found
+        if not match.empty:
+            dryness_value = float(match.iloc[0]['m_diff_mean'])
+
+        else:
+            dryness_value = None
+
+        dryness_values.append(dryness_value)
+
+    df_datarecorder['dryness'] = dryness_values
+
+    return df_datarecorder
