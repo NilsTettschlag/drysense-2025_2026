@@ -5,7 +5,7 @@ import seaborn as sns
 from functions import m_data
 
 #set Machine for wich you want to calculate dataoutput
-set_machine = 'OCEAN'
+set_machine = 'DLRA'
 
 # Define path to set machine data
 path_to_machine_data = f'data/{set_machine}'
@@ -33,7 +33,7 @@ for path in folder_paths:
 data_protocoll = m_data.read_protocoll_file(folder_path_protocoll)
 
 # filter datarecorder data based on protocol timestamps
-data_timestamps_filtered_datarecorder = m_data.compare_datatimestamps_recorder_protocoll(data_raw_datarecorder, data_protocoll)
+data_timestamps_filtered_datarecorder = m_data.compare_datatimestamps_recorder_protocoll(data_raw_datarecorder, data_protocoll, set_machine)
 
 # Save outputs of datarecorder data
 data_timestamps_filtered_datarecorder.to_csv(f'output/{set_machine}/data_timestamps_filtered_datarecorder.csv', index=False)

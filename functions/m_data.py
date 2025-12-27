@@ -85,16 +85,17 @@ def read_protocoll_file(folder_path_protocoll: str) -> DataFrame:
 
     return combined
 
-def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_protocoll: DataFrame) -> DataFrame:
+def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_protocoll: DataFrame, machine: str) -> DataFrame:
     """Compare datarecorder Timestamps to protocoll Timestamps and
        only keep datarecorder rows that fall within any protocoll start/end interval.
+       Also adds the corresponding t_duration from protocoll.
 
     Args:
         df_datarecorder (DataFrame): DataFrame of datarecorder file, must have 'Timestamp' column
         df_protocoll (DataFrame): DataFrame of protocoll file, must have 'start_time' and 'end_time'
 
     Returns:
-        DataFrame: Filtered version of df_datarecorder
+        DataFrame: Filtered version of df_datarecorder with added t_duration column
     """
     # Sicherstellen, dass Timestamp-Spalten datetime sind
     df_datarecorder = df_datarecorder.copy()
@@ -104,13 +105,34 @@ def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_pro
 
     # Leeres Filter-Array initialisieren
     mask = pd.Series(False, index=df_datarecorder.index)
+    if machine == 'OCEAN':
+        t_duration_list = pd.Series(None, index=df_datarecorder.index)
+    else:
+        if machine == 'DLRA':
+            rotation_speed_UL = pd.Series(None, index=df_datarecorder.index)
+            temperature_drying = pd.Series(None, index=df_datarecorder.index)
+
 
     # Für jedes Protokoll-Intervall prüfen, welche Timestamps dazugehören
     for _, row in df_protocoll.iterrows():
-        mask |= (df_datarecorder['Timestamp'] >= row['start_time']) & (df_datarecorder['Timestamp'] <= row['end_time'])
+        interval_mask = (df_datarecorder['Timestamp'] >= row['start_time']) & (df_datarecorder['Timestamp'] <= row['end_time'])
+        mask |= interval_mask
+        if machine == 'OCEAN':
+            t_duration_list[interval_mask] = row['t_duration']
+        else:
+            if machine == 'DLRA':
+                rotation_speed_UL[interval_mask] = row['n_UL']
+                temperature_drying[interval_mask] = row['T_drying']
 
-    # Gefiltertes DataFrame zurückgeben
-    return df_datarecorder[mask].reset_index(drop=True)
+    # Gefiltertes DataFrame mit t_duration zurückgeben
+    result = df_datarecorder[mask].reset_index(drop=True)
+    if machine == 'OCEAN':
+        result['t_duration'] = t_duration_list[mask].values
+    else:
+        if machine == 'DLRA':
+            result['n_UL'] = rotation_speed_UL[mask].values
+            result['T_drying'] = temperature_drying[mask].values
+    return result
 
 def read_lascar_file(folder_path_lascar: str) -> DataFrame:
     """Read in all csv-files from lascar folder as a single DataFrame
@@ -184,3 +206,36 @@ def compare_datatimestamps_lascar_protocoll(df_lascar: DataFrame, df_protocoll: 
     df_filtered = df_merged.loc[mask, df_lascar.columns].reset_index(drop=True)
 
     return df_filtered
+
+def read_dryness_data(file_path_dryness_data: str) -> DataFrame:
+    """Read external dryness data file
+
+    Args:
+        file_path_dryness_data (str): Path to the dryness data CSV file
+
+    Returns:
+        DataFrame: DataFrame containing dryness data
+    """
+
+    df_dryness = pd.read_csv(
+        file_path_dryness_data,
+        sep=';',
+        low_memory=False
+    )
+
+    
+
+    return df_dryness
+
+def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame) -> DataFrame:
+    """Add dryness values to datarecorder DataFrame based on external dryness data file.
+
+    Args:
+        df_datarecorder (DataFrame): DataFrame containing filtered datarecorder Data and Protocoll data
+        df_dryness_data (DataFrame): DataFrame containing external dryness data
+
+    Returns:
+        DataFrame: DataFrame with added dryness values
+    """
+
+    return df_datarecorder  
