@@ -5,7 +5,7 @@ import seaborn as sns
 from functions import m_data
 
 #set Machine for wich you want to calculate dataoutput
-set_machine = 'DLRA'
+set_machine = 'DLRA'  # Options: 'OCEAN', 'DLRA'
 
 # Define path to set machine data
 path_to_machine_data = f'data/{set_machine}'
@@ -47,3 +47,9 @@ data_usb_logger_filtered = m_data.compare_datatimestamps_lascar_protocoll(data_u
 # Save outputs of lascar data
 data_usb_logger_filtered.to_csv(f'output/{set_machine}/data_usb_logger.csv', index=False)
 
+# read dryness data and add dryness values to datarecorder data
+path_dryness_folder = f'data/{set_machine}/protocoll_dryness'
+
+df_dryness = m_data.read_dryness_data(path_dryness_folder)
+
+data_with_dryness = m_data.add_dryness_values(data_timestamps_filtered_datarecorder, df_dryness)

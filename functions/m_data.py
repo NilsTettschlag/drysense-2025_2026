@@ -207,23 +207,33 @@ def compare_datatimestamps_lascar_protocoll(df_lascar: DataFrame, df_protocoll: 
 
     return df_filtered
 
-def read_dryness_data(file_path_dryness_data: str) -> DataFrame:
+def read_dryness_data(folder_path_dryness_data: str) -> DataFrame:
     """Read external dryness data file
 
     Args:
-        file_path_dryness_data (str): Path to the dryness data CSV file
-
+        folder_path_dryness_data (str): Path to the dryness data folder
     Returns:
         DataFrame: DataFrame containing dryness data
     """
 
-    df_dryness = pd.read_csv(
-        file_path_dryness_data,
-        sep=';',
-        low_memory=False
-    )
+    folder = Path(folder_path_dryness_data)
 
-    
+    for csv_file in sorted(folder.glob("*.csv")):
+        df_dryness = pd.read_csv(
+            csv_file,
+            sep=';',
+            encoding="cp1252",
+            low_memory=False
+        )
+
+    # only keep spalten that have enties in every cell
+    df_dryness = df_dryness.dropna(axis=0, how='any')
+
+    # drop row m_before, m_after, m_diff and n_set --> unecessary for adding dryness values
+    df_dryness = df_dryness.drop(columns=['m_before', 'm_after', 'm_diff', 'n_set'], errors='ignore')
+
+    # reset index
+    df_dryness = df_dryness.reset_index(drop=True)
 
     return df_dryness
 
