@@ -134,9 +134,9 @@ def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_pro
             result['T_drying'] = temperature_drying[mask].values
     return result
 
-def calculate_mean_datarecorder(df_datarecorder: DataFrame) -> DataFrame:
-    """Calculate mean values for datarecorder DataFrame grouped by t_duration, n_UL, T_drying, 
-        save Timestamp col with start and endtime of each group.
+def calculate_mean(df_datarecorder: DataFrame) -> DataFrame:
+    """Calculate mean values for datarecorder DataFrame grouped by t_duration, n_UL, T_drying,
+        if exists: save Timestamp col with start and endtime of each group.
 
     Args:
         df_datarecorder (DataFrame): DataFrame containing filtered datarecorder Data and Protocoll data
@@ -159,17 +159,21 @@ def calculate_mean_datarecorder(df_datarecorder: DataFrame) -> DataFrame:
     # Calculate mean for each group
     mean_df = grouped.mean().reset_index()
 
-    # Add start and end Timestamp for each group
-    start_times = grouped['Timestamp'].min().reset_index(name='start_time')
-    end_times = grouped['Timestamp'].max().reset_index(name='end_time')
+    # only do if timestamp column exists
+    if 'Timestamp' not in df_datarecorder.columns:
+        return mean_df
+    else:
+        # Add start and end Timestamp for each group
+        start_times = grouped['Timestamp'].min().reset_index(name='start_time')
+        end_times = grouped['Timestamp'].max().reset_index(name='end_time')
 
-    mean_df = mean_df.merge(start_times, on=group_cols)
-    mean_df = mean_df.merge(end_times, on=group_cols)
+        mean_df = mean_df.merge(start_times, on=group_cols)
+        mean_df = mean_df.merge(end_times, on=group_cols)
 
-    # start and end time as first columns
-    mean_df = mean_df[['start_time', 'end_time'] + [col for col in mean_df.columns if col not in ['start_time', 'end_time']]]
+        # start and end time as first columns
+        mean_df = mean_df[['start_time', 'end_time'] + [col for col in mean_df.columns if col not in ['start_time', 'end_time']]]
 
-    mean_df = mean_df.drop(columns=['Timestamp'])  # Drop original Timestamp column
+        mean_df = mean_df.drop(columns=['Timestamp'])  # Drop original Timestamp column
 
     return mean_df
 
@@ -305,7 +309,7 @@ def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame) -
                 (df_dryness_data['n_UL'] == row['n_UL'])
             ]
         else:
-            match = pd.DataFrame()  # No match if required columns are missing 
+            match = pd.DataFrame()  # No match if required columns are missing
         # Get dryness value if match found
         if not match.empty:
             dryness_value = float(match.iloc[0]['m_diff_mean'])
@@ -318,3 +322,35 @@ def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame) -
     df_datarecorder['dryness'] = dryness_values
 
     return df_datarecorder
+
+def read_IR_temperature_file(folder_path_IR_temperature: str) -> DataFrame:
+    """Read in all csv-files from IR temperature folder as a single DataFrame
+
+    Args:
+        folder_path_IR_temperature (str): path to folder of IR temperature files
+
+    Returns:
+        DataFrame: concatenated DataFrame of all IR temperature CSV timelines
+    """
+
+    folder = Path(folder_path_IR_temperature)
+
+    dfs = []
+
+    for csv_file in sorted(folder.glob("*.csv")):
+        df_ir = pd.read_csv(
+            csv_file,
+            sep=';',
+            encoding="cp1252",
+            decimal=",",
+            low_memory=False
+        )
+
+
+        dfs.append(df_ir)
+
+    combined = pd.concat(dfs, ignore_index=True)
+
+    ir_data = combined.ffill()
+
+    return ir_data
