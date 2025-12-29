@@ -134,6 +134,45 @@ def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_pro
             result['T_drying'] = temperature_drying[mask].values
     return result
 
+def calculate_mean_datarecorder(df_datarecorder: DataFrame) -> DataFrame:
+    """Calculate mean values for datarecorder DataFrame grouped by t_duration, n_UL, T_drying, 
+        save Timestamp col with start and endtime of each group.
+
+    Args:
+        df_datarecorder (DataFrame): DataFrame containing filtered datarecorder Data and Protocoll data
+
+    Returns:
+        DataFrame: DataFrame with mean values for each group
+    """
+
+    group_cols = []
+    if 't_duration' in df_datarecorder.columns:
+        group_cols.append('t_duration')
+    if 'n_UL' in df_datarecorder.columns:
+        group_cols.append('n_UL')
+    if 'T_drying' in df_datarecorder.columns:
+        group_cols.append('T_drying')
+
+    # Group by the identified columns
+    grouped = df_datarecorder.groupby(group_cols)
+
+    # Calculate mean for each group
+    mean_df = grouped.mean().reset_index()
+
+    # Add start and end Timestamp for each group
+    start_times = grouped['Timestamp'].min().reset_index(name='start_time')
+    end_times = grouped['Timestamp'].max().reset_index(name='end_time')
+
+    mean_df = mean_df.merge(start_times, on=group_cols)
+    mean_df = mean_df.merge(end_times, on=group_cols)
+
+    # start and end time as first columns
+    mean_df = mean_df[['start_time', 'end_time'] + [col for col in mean_df.columns if col not in ['start_time', 'end_time']]]
+
+    mean_df = mean_df.drop(columns=['Timestamp'])  # Drop original Timestamp column
+
+    return mean_df
+
 def read_lascar_file(folder_path_lascar: str) -> DataFrame:
     """Read in all csv-files from lascar folder as a single DataFrame
 
