@@ -281,45 +281,58 @@ def read_dryness_data(folder_path_dryness_data: str) -> DataFrame:
 
     return df_dryness
 
-def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame) -> DataFrame:
-    """Add dryness values to datarecorder DataFrame based on external dryness data file.
+def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame, df_IR: DataFrame) -> DataFrame:
+    """Add dryness values and IR data to datarecorder DataFrame based on external dryness data file.
        Filter by Protocol data for each machine:
        DLRA: matxh by T_drying and n_UL
        OCEAN: match by t_duration
 
     Args:
         df_datarecorder (DataFrame): DataFrame containing filtered datarecorder Data and Protocoll data
+        df_IR (DataFrame): DataFrame containing IR temperature data
         df_dryness_data (DataFrame): DataFrame containing external dryness data
 
     Returns:
-        DataFrame: DataFrame with added dryness values
+        DataFrame: DataFrame with added dryness values and added IR data
     """
 
     df_datarecorder = df_datarecorder.copy()
     dryness_values = []
+    IR_values = []
 
     for _, row in df_datarecorder.iterrows():
 
         # Find matching dryness data row
         if 't_duration' in row:
-            match = df_dryness_data[df_dryness_data['t_duration'] == row['t_duration']]
+            match = df_dryness_data[
+                (df_dryness_data['t_duration'] == row['t_duration'])]
+            match_IR = df_IR[
+                (df_IR['t_duration'] == row['t_duration'])]
         elif 'T_drying' in row and 'n_UL' in row:
             match = df_dryness_data[
                 (df_dryness_data['T_drying'] == row['T_drying']) &
                 (df_dryness_data['n_UL'] == row['n_UL'])
             ]
+            match_IR = df_IR[
+                (df_IR['T_drying'] == row['T_drying']) &
+                (df_IR['n_UL'] == row['n_UL'])]
         else:
             match = pd.DataFrame()  # No match if required columns are missing
+            match_IR = pd.DataFrame()
         # Get dryness value if match found
         if not match.empty:
             dryness_value = float(match.iloc[0]['m_diff_mean'])
+            IR_value = float(match_IR.iloc[0]['IR_temp'])
 
         else:
             dryness_value = None
+            IR_value = None
 
         dryness_values.append(dryness_value)
+        IR_values.append(IR_value)
 
-    df_datarecorder['dryness'] = dryness_values
+    df_datarecorder['m_water_mean'] = dryness_values
+    df_datarecorder['IR_temp_mean'] = IR_values
 
     return df_datarecorder
 
