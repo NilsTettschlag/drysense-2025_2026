@@ -250,7 +250,7 @@ def compare_datatimestamps_lascar_protocoll(df_lascar: DataFrame, df_protocoll: 
 
     return df_filtered
 
-def read_dryness_data(folder_path_dryness_data: str) -> DataFrame:
+def read_dryness_data(folder_path_dryness_data: str, mean: bool) -> DataFrame:
     """Read external dryness data file
 
     Args:
@@ -270,18 +270,23 @@ def read_dryness_data(folder_path_dryness_data: str) -> DataFrame:
             low_memory=False
         )
 
-    # only keep spalten that have enties in every cell
-    df_dryness = df_dryness.dropna(axis=0, how='any')
+    if mean == True:
+        # only keep spalten that have enties in every cell
+        df_dryness = df_dryness.dropna(axis=0, how='any')
 
-    # drop row m_before, m_after, m_diff and n_set --> unecessary for adding dryness values
-    df_dryness = df_dryness.drop(columns=['m_before', 'm_after', 'm_diff', 'n_set'], errors='ignore')
+        # drop row m_before, m_after, m_diff and n_set --> unecessary for adding dryness values
+        df_dryness = df_dryness.drop(columns=['m_before', 'm_after', 'm_diff', 'n_set'], errors='ignore')
+
+    else:
+        # forward fill missing values
+        df_dryness = df_dryness.ffill()
 
     # reset index
     df_dryness = df_dryness.reset_index(drop=True)
 
     return df_dryness
 
-def add_dryness_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame, df_IR: DataFrame) -> DataFrame:
+def add_dryness_and_IR_values(df_datarecorder: DataFrame, df_dryness_data: DataFrame, df_IR: DataFrame) -> DataFrame:
     """Add dryness values and IR data to datarecorder DataFrame based on external dryness data file.
        Filter by Protocol data for each machine:
        DLRA: matxh by T_drying and n_UL
