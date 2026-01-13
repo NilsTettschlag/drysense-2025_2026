@@ -33,3 +33,6 @@ data/*.json
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Mypy
+.mypy_cache/

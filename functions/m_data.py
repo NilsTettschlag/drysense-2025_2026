@@ -95,7 +95,7 @@ def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_pro
         df_protocoll (DataFrame): DataFrame of protocoll file, must have 'start_time' and 'end_time'
 
     Returns:
-        DataFrame: Filtered version of df_datarecorder with added t_duration column
+        DataFrame: Filtered version of df_datarecorder with added t_duration or n_UL and T_drying columns
     """
     # Sicherstellen, dass Timestamp-Spalten datetime sind
     df_datarecorder = df_datarecorder.copy()
@@ -132,6 +132,14 @@ def compare_datatimestamps_recorder_protocoll(df_datarecorder: DataFrame, df_pro
         if machine == 'DLRA':
             result['n_UL'] = rotation_speed_UL[mask].values
             result['T_drying'] = temperature_drying[mask].values
+
+    # add dataset number column for each unique combination of t_duration, n_UL, T_drying
+    group_cols_dataset = [col for col in ['t_duration', 'n_UL', 'T_drying'] if col in result.columns]
+    if group_cols_dataset:
+        result['dataset_number'] = result.groupby(group_cols_dataset, sort=False).ngroup() + 1
+    else:
+        result['dataset_number'] = 1
+
     return result
 
 def calculate_mean(df_datarecorder: DataFrame) -> DataFrame:
@@ -335,9 +343,14 @@ def add_dryness_and_IR_values(df_datarecorder: DataFrame, df_dryness_data: DataF
 
         dryness_values.append(dryness_value)
         IR_values.append(IR_value)
-
+    # Add dryness and IR values to the DataFrame
     df_datarecorder['m_water_mean'] = dryness_values
     df_datarecorder['IR_temp_mean'] = IR_values
+    # add dataset number column for each unique combination of t_duration, n_UL, T_drying
+    df_datarecorder['dataset_number'] = df_datarecorder.groupby(
+        [col for col in ['t_duration', 'n_UL', 'T_drying'] if col in df_datarecorder.columns]
+    ).ngroup() + 1 
+
 
     return df_datarecorder
 

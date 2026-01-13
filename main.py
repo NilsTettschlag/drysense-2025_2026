@@ -5,7 +5,7 @@ import seaborn as sns
 from functions import m_data
 
 #set Machine for wich you want to calculate dataoutput
-set_machine = 'DLRA'  # Options: 'OCEAN', 'DLRA'
+set_machine = 'OCEAN'  # Options: 'OCEAN', 'DLRA'
 
 # Define path to set machine data
 path_to_machine_data = f'data/{set_machine}'
