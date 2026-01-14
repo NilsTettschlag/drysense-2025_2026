@@ -5,7 +5,7 @@ import seaborn as sns
 from functions import m_data
 
 #set Machine for wich you want to calculate dataoutput
-set_machine = 'OCEAN'  # Options: 'OCEAN', 'DLRA'
+set_machine = 'DLRA'  # Options: 'OCEAN', 'DLRA'
 
 # Define path to set machine data
 path_to_machine_data = f'data/{set_machine}'
@@ -52,6 +52,8 @@ path_dryness_folder = f'data/{set_machine}/protocoll_dryness'
 
 df_dryness = m_data.read_dryness_data(path_dryness_folder, True)
 
+df_dryness.to_csv(f'output/{set_machine}/dryness_data.csv', index=False)
+
 # calculate mean datarecorder data
 mean_datarecorder = m_data.calculate_mean(data_timestamps_filtered_datarecorder)
 
@@ -66,6 +68,9 @@ data_ir_mean = m_data.calculate_mean(data_ir.drop(columns=['sample_number']))
 # add dryness values and IR temperature to mean datarecorder data
 full_dataset = m_data.add_dryness_and_IR_values(mean_datarecorder, df_dryness, data_ir_mean)
 
+# add std deviation of dryness values to mean datarecorder data
+full_dataset = m_data.add_std_dryness_values(full_dataset, df_dryness)
+
 # Save outputs of mean datarecorder data with dryness values
-full_dataset.to_csv(f'output/{set_machine}/mean_datarecorder_with_all_measures.csv', index=False)
+full_dataset.to_csv(f'output/{set_machine}/mean_std_datarecorder_with_all_measures.csv', index=False)
 

@@ -1,4 +1,5 @@
 import os
+from numpy import std
 import pandas as pd
 from pathlib import Path
 from pandas import DataFrame
@@ -279,11 +280,11 @@ def read_dryness_data(folder_path_dryness_data: str, mean: bool) -> DataFrame:
         )
 
     if mean == True:
-        # only keep spalten that have enties in every cell
-        df_dryness = df_dryness.dropna(axis=0, how='any')
-
         # drop row m_before, m_after, m_diff and n_set --> unecessary for adding dryness values
-        df_dryness = df_dryness.drop(columns=['m_before', 'm_after', 'm_diff', 'n_set'], errors='ignore')
+        df_dryness = df_dryness.drop(columns=['m_before', 'm_after', 'n_set'], errors='ignore')
+
+        # forward fill missing values
+        df_dryness = df_dryness.ffill()
 
     else:
         # forward fill missing values
@@ -385,3 +386,50 @@ def read_IR_temperature_file(folder_path_IR_temperature: str) -> DataFrame:
     ir_data = combined.ffill()
 
     return ir_data
+
+def add_std_dryness_values(df_mean_datarecorder: DataFrame, df_dryness_data: DataFrame) -> DataFrame:
+    """Calculate Std from df_filtered for each unique dataset (t_duration, n_UL, T_drying)
+       and add these std values to df_mean_datarecorder
+
+    Args:
+        df_mean_datarecorder (DataFrame): DataFrame containing mean datarecorder data with dryness values
+        df_filtered_datarecorder (DataFrame): DataFrame containing filtered datarecorder data with protocoll data
+        df_dryness_data (DataFrame): DataFrame containing external dryness data
+
+    Returns:
+        DataFrame: DataFrame with added std deviation of dryness values
+    """
+
+    # calculate std deviation of dryness values for each unique dataset
+    std_values = []
+
+    # calculate std deviation of dryness values for each unique dataset (t_duration, n_UL, T_drying)
+    df_dryness_data['m_water_std'] = df_dryness_data.groupby('m_diff_mean')['m_diff'].transform('std')
+
+    # add std deviation values to mean datarecorder data
+    for _, row in df_mean_datarecorder.iterrows():
+
+        # Find matching dryness data row
+        if 't_duration' in row:
+            match = df_dryness_data[
+                (df_dryness_data['t_duration'] == row['t_duration'])]
+        elif 'T_drying' in row and 'n_UL' in row:
+            match = df_dryness_data[
+                (df_dryness_data['T_drying'] == row['T_drying']) &
+                (df_dryness_data['n_UL'] == row['n_UL'])
+            ]
+        else:
+            match = pd.DataFrame()  # No match if required columns are missing
+
+        # Get std deviation value if match found
+        if not match.empty:
+            std_value = float(match.iloc[0]['m_water_std'])
+        else:
+            std_value = None
+
+        std_values.append(std_value)
+
+    # Add std deviation values to the DataFrame
+    df_mean_datarecorder['m_water_std'] = std_values
+
+    return df_mean_datarecorder
