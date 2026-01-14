@@ -36,3 +36,6 @@ Desktop.ini
 
 # Mypy
 .mypy_cache/
+
+# json
+*.json
