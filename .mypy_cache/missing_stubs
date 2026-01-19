@@ -1,1 +1,8 @@
+types-Pygments
+types-colorama
+types-decorator
+types-defusedxml
+types-jsonschema
+types-openpyxl
+types-python-dateutil
 types-seaborn

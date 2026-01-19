@@ -1,3 +1,6 @@
+[tool.poetry]
+package-mode = false
+
 [project]
 name = "drysense-2025-2026"
 version = "0.1.0"
@@ -22,4 +25,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
 pandas-stubs = "^2.3.3.251201"
+ipykernel = "^7.1.0"
+jupyter = "^1.1.1"
+
 
