@@ -6,3 +6,6 @@ def logistic_decay(x: float, L: float, k: float, x0: float, C: float) -> float:
 
 def exponential_decay(x: float, A: float, k: float, C: float) -> float:
     return 1/A * np.exp(-k * x) + C
+
+def quadratic_function(x: float, a: float, b: float, c: float) -> float:
+    return a * x**2 + b * x + c
